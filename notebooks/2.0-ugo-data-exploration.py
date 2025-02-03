@@ -13,6 +13,8 @@ print(df.head())
 version = df["Ve"]
 cnit = df2["cnit"]
 tvv = df2["tvv"]
+T = df["T"]
+Va = df["Va"]
 
 list_cnit = list(cnit)
 
@@ -20,7 +22,11 @@ keep_tvv = tvv.loc[tvv.isin(version)]
 keep_version = version.loc[version.isin(tvv)]
 
 df_keep_tv = df2.loc[df2["tvv"].isin(version)]
+df_keep_tv2 = df2.loc[df2["tvv"].isin(T)]
+df_keep_tv3 = df2.loc[df2["tvv"].isin(Va)]
 df_keep_version = df.loc[df["Ve"].isin(tvv)]
+keep_va = df[["T","Va","Ve"]].loc[df["Va"].isin(tvv)]
+keep_T = df[["T","Va","Ve"]].loc[df["T"].isin(tvv)]
 
 
 print('keep_tvv.shape : ',keep_tvv.shape)
