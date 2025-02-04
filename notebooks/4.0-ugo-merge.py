@@ -40,11 +40,8 @@ df_merge = pd.concat([df_merge_T,df_merge_Va,df_merge_Ve],axis=0).reset_index(dr
 #Suppresion des duplicates
 df_merge = df_merge.drop_duplicates().reset_index(drop=True)
 
-# for voiture in list(df_merge["Mk"].unique()):
-#     if (voiture in list(df_merge["lib_mrq"].unique())):
-#         continue
-#     else:
-#         print(voiture)
+print(df_merge.shape)
+df_merge.to_csv("data/data_merge.csv",index=False)
     
 
 print('Fin de code')
