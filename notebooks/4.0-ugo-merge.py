@@ -11,15 +11,20 @@ df = df.drop_duplicates()
 columns_to_remove = ["ID","VFN","Cr","Mt","Ewltp (g/km)",
                      "z (Wh/km)","IT","Ernedc (g/km)","Erwltp (g/km)","De",
                      "Vf","Status","year","Date of registration","Fuel consumption ",
-                     "ech","RLFI","Electric range (km)"]
+                     "ech","RLFI","Electric range (km)",'r']
 df2 = df2.drop(columns_to_remove,axis = 1)
 columns_to_remove = ["cnit","hc","hcnox","date_maj",
                      "Unnamed: 26","Unnamed: 27","Unnamed: 28","Unnamed: 29",]
 df = df.drop(columns_to_remove,axis = 1)
 
+#Drop duplicates dans df après avoir supprimer les colonnes inutiles
+print(df.shape)
+df = df.drop_duplicates()
+print(df.shape)
+
 #Remplacer les valeurs de Mk dans df2
-to_replace = ["ALFA ROMEO","AUTOMOBILES CITROEN","FIAT ","Peugot","Citroen","Dacia","DACIA AUTOMOBILE SA","Renault","Volvo","VOLVO/CARRUS"]
-value = ["ALFA-ROMEO","CITROEN","FIAT","PEUGOT","CITROEN","DACIA","DACIA","RENAULT","VOLVO","VOLVO"]
+to_replace = ["ALFA ROMEO","AUTOMOBILES CITROEN","FIAT ","Peugeot","Citroen","Dacia","DACIA AUTOMOBILE SA","Renault","Volvo","VOLVO/CARRUS"]
+value = ["ALFA-ROMEO","CITROEN","FIAT","PEUGEOT","CITROEN","DACIA","DACIA","RENAULT","VOLVO","VOLVO"]
 df2 = df2.replace(to_replace=to_replace, value=value)
 
 #Split en 3 df
@@ -36,6 +41,9 @@ df_merge_Va = df_merge_Va.drop(["tvv"], axis=1)
 df_merge_Ve = df_merge_Ve.drop(["tvv"], axis=1)
 
 df_merge = pd.concat([df_merge_T,df_merge_Va,df_merge_Ve],axis=0).reset_index(drop=True)
+
+
+
 
 #Suppresion des duplicates
 df_merge = df_merge.drop_duplicates().reset_index(drop=True)

@@ -8,7 +8,28 @@ print(df.shape)
 print(df.columns)
 print(df.head())
 
-#print(df["Country"].value_counts())
+columns_to_remove = ["ID","VFN","Cr","Mt","Ewltp (g/km)",
+                     "z (Wh/km)","IT","Ernedc (g/km)","Erwltp (g/km)",'r',"De",
+                     "Vf","Status","year","Date of registration","Fuel consumption ",
+                     "ech","RLFI","Electric range (km)"]
+df = df.drop(columns_to_remove,axis=1)
+df.drop_duplicates()
+print(df.shape)
+
+to_replace = ["ALFA ROMEO","AUTOMOBILES CITROEN","FIAT ","Peugeot","Citroen","Dacia","DACIA AUTOMOBILE SA","Renault","Volvo","VOLVO/CARRUS"]
+value = ["ALFA-ROMEO","CITROEN","FIAT","PEUGEOT","CITROEN","DACIA","DACIA","RENAULT","VOLVO","VOLVO"]
+df = df.replace(to_replace=to_replace, value=value)
+#
+
+# #print(df["Country"].value_counts())
+# PNCFB4 = df.loc[df["Ve"] == "PNCFB4"]
+# PNCFB42 = df2.loc[df2["tvv"] == "PNCFB4"]
+# columns = list(PNCFB4.columns) #['Country', 'Mp', 'Mh', 'Man', 'MMS', 'Tan', 'T', 'Va', 'Ve', 'Mk', 'Cn', 'Ct', 'm (kg)', 'Enedc (g/km)', 'W (mm)', 'At1 (mm)', 'At2 (mm)', 'Ft', 'Fm', 'ec (cm3)', 'ep (KW)']
+
+# PNCFB4_quant = PNCFB4.drop(['Country', 'Mp', 'Mh', 'Man', 'MMS', 'Tan', 'T', 'Va', 'Ve', 'Mk', 'Cn', 'Ct',   'Ft', 'Fm'],axis=1)
+# PNCFB4_quant_2 = PNCFB4_quant.drop(['m (kg)','Enedc (g/km)','ep (KW)'],axis=1)
+
+# PNCFB4_Peugeot = df.loc[(df["Ve"] == "PNCFB4")|(df["Mk"] == "PEUGEOT")]
 
 version = df["Ve"]
 cnit = df2["cnit"]
