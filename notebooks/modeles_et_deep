@@ -1,9 +1,0 @@
-import tensorflow as tf
-from tensorflow import keras
-
-model = keras.Sequential([
-    keras.layers.Dense(64, activation="relu", input_shape=(10,)),  # Exemple avec 10 features
-    keras.layers.Dense(7, activation="softmax")
-])
-
-print("Import réussi et modèle créé !")
