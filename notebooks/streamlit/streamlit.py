@@ -6,7 +6,7 @@ import seaborn as sns
 
 st.title("DS Octobre - Projet CO2")
 st.sidebar.title('Sommaire')
-pages=['Introduction', 'Exploration', 'Data Visualisation', 'Modélisation']
+pages=['Introduction', 'Exploration', 'Modélisation']
 page = st.sidebar.radio('Aller vers', pages)
 
 
@@ -76,6 +76,7 @@ if page == pages[1] :
         st.write("""Pour les variables conservées, étant donné que le nombre de valeurs manquantes représente un pourcentage faible de l'entièreté des valeurs du dataset, on a décidé de supprimer la ligne s'il manquait au moins une valeur. On ne perd pas énormément d’échantillons en appliquant cette stratégie. On préfère supprimer l’individu plutôt que de remplacer une valeur manquante par le mode le plus présent ou la médiane car cette nouvelle valeur reste hypothétique.  """)
         
         # nettoyage du dataset1
+        #
         df = df.iloc[:, :-4]
         to_drop = ["cnit", "tvv", "hc", "hcnox", "date_maj"]
         df_clear = df.drop(to_drop, axis = 1)
@@ -110,6 +111,14 @@ if page == pages[1] :
 
         rapport_counts = df_without_Na['nb_rapp'].value_counts()
 
+        #ajout des étiquettes
+        bins = [0, 100, 120, 140, 160, 200, 250, float('inf')]
+        labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+        df_without_Na['category'] = pd.cut(df_without_Na['co2'], bins=bins, labels=labels, right=True)
+
+        #fin du nettoyage
+        #
 
 
         st.write('### Analyse des variables')
@@ -129,27 +138,64 @@ if page == pages[1] :
         plt.title("Co2 en fonction de la puissance max et de la gamme du véhicule")
         st.pyplot(fig)
 
+        # plot côte à côte
+        fig, axes = plt.subplots(ncols=2, figsize=(12, 5))
         # Barplot du type de boite
-        fig, ax = plt.subplots()
-        sns.countplot(data=df_without_Na, x ='typ_boite', palette="viridis")
-        plt.xlabel('Type de boite de vitesse', fontsize=12)
-        plt.ylabel('Count', fontsize=12)
-        plt.title('Répartition des boites de vitesses', fontsize=14) 
-
-        st.pyplot(fig)
+        sns.countplot(data=df_without_Na, x='typ_boite', palette="viridis", ax=axes[0])
+        axes[0].set_xlabel('Type de boite de vitesse', fontsize=12)
+        axes[0].set_ylabel('Count', fontsize=12)
+        axes[0].set_title('Répartition des boites de vitesses', fontsize=14)
 
         # Barplot du nombre de rapports
-        fig, ax = plt.subplots()
-        sns.countplot(data=df_without_Na, x ='nb_rapp', palette="viridis")
-        plt.xticks(rotation=45, fontsize=10, ha='right')  
-        plt.xlabel('Nombre de rapports', fontsize=12)
-        plt.ylabel('Count', fontsize=12)
-        plt.title('Répartition des nombres de rapports', fontsize=14) 
+        sns.countplot(data=df_without_Na, x='nb_rapp', palette="viridis", ax=axes[1])
+        axes[1].set_xticklabels(axes[1].get_xticklabels(), rotation=45, fontsize=10, ha='right')
+        axes[1].set_xlabel('Nombre de rapports', fontsize=12)
+        axes[1].set_ylabel('Count', fontsize=12)
+        axes[1].set_title('Répartition des nombres de rapports', fontsize=14)
+        st.pyplot(fig)
+        
+        # plot côte à côte
+        fig, axes = plt.subplots(ncols=2, figsize=(12, 5))
+        sns.boxplot(data=df_without_Na, x='typ_boite', y='co2', palette="viridis", ax=axes[0])
+        axes[0].set_xticklabels(axes[0].get_xticklabels(), rotation=45, fontsize=10, ha='right')  
+        axes[0].set_xlabel('Boites de vitesse', fontsize=12)
+        axes[0].set_ylabel('CO2', fontsize=12)
+        axes[0].set_title('CO2 en fonction du type de boite de vitesse', fontsize=14) 
 
+        # Boxplot : Nombre de vitesses vs CO2
+        sns.boxplot(data=df_without_Na, x='nb_rapp', y='co2', palette="viridis", ax=axes[1])
+        axes[1].set_xticklabels(axes[1].get_xticklabels(), rotation=45, fontsize=10, ha='right')  
+        axes[1].set_xlabel('Nombre de vitesses', fontsize=12)
+        axes[1].set_ylabel('CO2', fontsize=12)
+        axes[1].set_title('CO2 en fonction du nombre de vitesses', fontsize=14) 
         st.pyplot(fig)
 
+        fig = plt.figure()
+        sns.countplot(data=df_without_Na, x ='category', palette="viridis")
+        plt.xticks(rotation=45, fontsize=10, ha='right')  
+        plt.xlabel('Etiquette', fontsize=12)
+        plt.ylabel('Count', fontsize=12)
+        plt.title("Répartition des catégories d'emission de CO2", fontsize=14) 
+        plt.tight_layout()
+        st.pyplot(fig)
 
+        fig = plt.figure()
+        sns.countplot(data=df_without_Na, x ='Carrosserie', palette="viridis")
+        plt.xticks(rotation=45, fontsize=10, ha='right')  
+        plt.xlabel('Carosserie', fontsize=12)
+        plt.ylabel('Count', fontsize=12)
+        plt.title('Répartition des carosserie', fontsize=14) 
+        st.pyplot(fig)
 
-st.write("Introduction")
-if st.checkbox("Afficher"):
-  st.write("Suite du Streamlit")    
+        fig = plt.figure()
+        sns.countplot(data=df_without_Na, x ='gamme', palette="viridis")
+        plt.xticks(rotation=45, fontsize=10, ha='right')  
+        plt.xlabel('Gamme', fontsize=12)
+        plt.ylabel('Count', fontsize=12)
+        plt.title('Répartition des gammes', fontsize=14) 
+        st.pyplot(fig)        
+
+if page == pages[2] :
+    st.write('# Modélisation')
+
+ 
