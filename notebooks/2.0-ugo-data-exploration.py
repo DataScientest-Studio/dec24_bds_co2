@@ -1,3 +1,10 @@
+'''
+README
+Ce fichier python est principalement un brouillon pour tester de merger le premier et le second dataset.
+J'essaye de trouver les clefs qui permettent de relier les deux datasets.
+'''
+
+###Bibliothèques
 import numpy as np
 import pandas as pd
 
@@ -8,6 +15,7 @@ print(df.shape)
 print(df.columns)
 print(df.head())
 
+###Colonnes suprimées jugées non utiles
 columns_to_remove = ["ID","VFN","Cr","Mt","Ewltp (g/km)",
                      "z (Wh/km)","IT","Ernedc (g/km)","Erwltp (g/km)",'r',"De",
                      "Vf","Status","year","Date of registration","Fuel consumption ",
@@ -16,10 +24,12 @@ df = df.drop(columns_to_remove,axis=1)
 df.drop_duplicates()
 print(df.shape)
 
+###On change des valeurs pour que les clefs matchent entre les 2 datasets
 to_replace = ["ALFA ROMEO","AUTOMOBILES CITROEN","FIAT ","Peugeot","Citroen","Dacia","DACIA AUTOMOBILE SA","Renault","Volvo","VOLVO/CARRUS"]
 value = ["ALFA-ROMEO","CITROEN","FIAT","PEUGEOT","CITROEN","DACIA","DACIA","RENAULT","VOLVO","VOLVO"]
 df = df.replace(to_replace=to_replace, value=value)
-#
+
+###Des tests pour comprendre comment les clefs matchent
 
 # #print(df["Country"].value_counts())
 # PNCFB4 = df.loc[df["Ve"] == "PNCFB4"]
@@ -61,7 +71,7 @@ df_keep_version["Mh"].value_counts()
 keep_marque = list(df_keep_tv["lib_mrq"].value_counts().index)
 keep_marque = keep_marque[:-3] + [keep_marque[-2]]
 
-###IMPORTANT : plutôt regarder Mk que Mh
+#IMPORTANT : plutôt regarder Mk que Mh
 to_replace = ["AUTOMOBILES CITROEN","AUTOMOBILES PEUGEOT","FIAT GROUP AUTOMOBILES SPA"]
 value = ["CITROEN","PEUGEOT","FIAT"]
 

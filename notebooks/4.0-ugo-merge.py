@@ -1,3 +1,15 @@
+'''
+README
+Ce dataset est la première partie du merge entre le dataset initial et le second dataset pour obtenir le dataset mergé.
+La deuxième partie se fait sur un jupyter notebook.
+Initialement je voulais utiliser uniquement un seul fichier (un fichier jupyter de préférence) pour faire le merge car c'est plus visible.
+Mais les données du second dataset étaient trop volumineux pout les télécharger sur jupyter.
+Alors le merge commence sur ce fichier python car j'arrive à télécharger le dataset.
+Puis une fois que je suis arrivé à télécharger les données, et à faire une première partie du merge,
+la suite du code se fait sur 4.1-ugo-merge.ipynb
+'''
+
+###Bibliothèques
 import numpy as np
 import pandas as pd
 
@@ -22,7 +34,7 @@ print(df.shape)
 df = df.drop_duplicates()
 print(df.shape)
 
-#Remplacer les valeurs de Mk dans df2
+#Remplacer les valeurs de Mk dans df2. Cela permet de s'assurer que les deux datasets matchent
 to_replace = ["ALFA ROMEO","AUTOMOBILES CITROEN","FIAT ","Peugeot","Citroen","Dacia","DACIA AUTOMOBILE SA","Renault","Volvo","VOLVO/CARRUS"]
 value = ["ALFA-ROMEO","CITROEN","FIAT","PEUGEOT","CITROEN","DACIA","DACIA","RENAULT","VOLVO","VOLVO"]
 df2 = df2.replace(to_replace=to_replace, value=value)
