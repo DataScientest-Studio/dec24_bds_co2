@@ -4,6 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import joblib
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
 st.title("DS Octobre - Projet CO2")
 st.sidebar.title('Sommaire')
 pages=['Introduction', 'Exploration', 'Modélisation']
@@ -35,7 +40,7 @@ if page == pages[1] :
     st.write('# Exploration')
 
     # selection du dataset exploré
-    dataset_select = ['Dataset #1', 'Dataset #2']
+    dataset_select = ['Dataset #1', 'Dataset Merge']
     dataset_selector = st.radio('Choix du dataset', dataset_select)
 
     if dataset_selector == dataset_select[0] :
@@ -193,9 +198,123 @@ if page == pages[1] :
         plt.xlabel('Gamme', fontsize=12)
         plt.ylabel('Count', fontsize=12)
         plt.title('Répartition des gammes', fontsize=14) 
-        st.pyplot(fig)        
+        st.pyplot(fig)
+    
+    
+    if dataset_selector == dataset_select[1] :
+        df=pd.read_csv("data_merge_v2.csv")
+        st.write('## Dataset Merge')
+        st.dataframe(df.head(5))
+
+        
+        fig = plt.figure()
+        sns.boxplot(y=df["ec (cm3)"])
+        plt.title('Répartion des valeurs cylindrés des moteurs (Ec (cm3))')
+        st.pyplot(fig)
+        
+        fig = plt.figure()
+        sns.boxplot(y=df["W (mm)"])
+        plt.title('Répartition des valeurs du diamètres des roues (W (mm))')
+        st.pyplot(fig)
+
+        fig = plt.figure()
+        sns.scatterplot(data=df, x='ec (cm3)', y='puiss_max', hue='category')
+        plt.xlabel("Engine Capacity")
+        plt.ylabel("Puissance maximale")
+        plt.title("La puissance maximale en fonction de capacité du moteur pour chaque catégorie d'émission de CO2")
+        st.pyplot(fig)
+
 
 if page == pages[2] :
     st.write('# Modélisation')
+    st.write('## Dataset Merge')
 
- 
+    model_types = ["KNN", "RandomForest", "LogisticRegression"]
+
+    # Correspondance des modèles avec leurs préfixes
+    model_prefix = {
+        "KNN": "KNN",
+        "Random Forest": "RF",
+        "Logistic Regression": "LR"
+        }
+
+    features_order = ["conso", "puiss", "ec"]  # Les variables toujours dans cet ordre
+    
+    # 📌 Définition des 7 variantes de modèles
+    model_variants = {
+        "conso_puiss_ec": ["conso", "puiss", "ec"],
+        "conso_puiss": ["conso", "puiss"],
+        "conso_ec": ["conso", "ec"],
+        "conso": ["conso"],
+        "puiss_ec": ["puiss", "ec"],
+        "puiss": ["puiss"],
+        "ec": ["ec"]
+    }
+
+    features_mapping = {
+    "conso": "conso_mixte",
+    "puiss": "puiss_max",
+    "ec": "ec (cm3)"
+    }
+
+    # 📌 Fonction pour charger le dataset initial
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data_merge_v2.csv")  # Remplace par ton vrai fichier
+        return df
+
+    df = load_data()
+
+    # 📌 Fonction pour charger un modèle et afficher son classification report
+    def evaluate_model(model_name, variant):
+        prefix = model_prefix[model_name]
+        # Construire le chemin du fichier modèle (ex: "KNN_conso_puiss_ec.pkl")
+        etude1 = "etude1/"
+        model_path = etude1 + f"{prefix}_{variant}.pkl"
+
+        # Vérifier si le fichier existe avant de charger
+        try:
+            model = joblib.load(model_path)
+        except FileNotFoundError:
+            st.error(f"Le fichier {model_path} est introuvable.")
+            return
+
+        # Séparer X et y en utilisant les variables dans l'ordre défini
+        #selected_features = [features_mapping["conso"], features_mapping["puiss"], features_mapping["ec"]]
+        selected_features = [features_mapping[var] for var in model_variants[variant]]
+        X = df[selected_features]
+        y = df["category"].replace(to_replace=['A','B','C','D','E','F','G'],value=[0,1,2,3,4,5,6])
+
+        # Diviser les données en train et test
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=64)
+
+        # 📌 Appliquer le StandardScaler (sauvegardé ou recalculé)
+        scaler_path = f"scaler_{model_name}.pkl"  # Exemple : "scaler_KNN.pkl"
+        try:
+            scaler = joblib.load(scaler_path)
+        except FileNotFoundError:
+            scaler = StandardScaler().fit(X_train)  # ⚠️ Recalcul du scaler si non sauvegardé
+
+        X_test_scaled = scaler.transform(X_test)
+
+        # Prédictions
+        y_pred = model.predict(X_test_scaled)
+
+        # Générer le classification report
+        report = classification_report(y_test, y_pred, output_dict=True)
+        report_df = pd.DataFrame(report).transpose()
+
+        # Affichage dans Streamlit
+        st.subheader(f"Classification Report - {model_name} ({variant})")
+        st.dataframe(report_df.style.format(precision=3))
+
+    # 📌 Interface Streamlit
+    st.title("Évaluation des Modèles")
+
+    # Sélecteur de modèle
+    selected_model = st.selectbox("Choisissez un modèle :", list(model_prefix.keys()))
+    selected_variant = st.selectbox("Choisissez une variante :", list(model_variants.keys()))
+
+    # Bouton pour exécuter l'évaluation
+    if st.button("Évaluer le modèle"):
+        evaluate_model(selected_model, selected_variant)
