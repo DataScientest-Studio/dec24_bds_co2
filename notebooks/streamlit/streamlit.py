@@ -7,7 +7,7 @@ import seaborn as sns
 import joblib
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 st.title("DS Octobre - Projet CO2")
 st.sidebar.title('Sommaire')
@@ -228,15 +228,16 @@ if page == pages[1] :
 if page == pages[2] :
     st.write('# Modélisation')
     st.write('## Dataset Merge')
+    st.write('## Dataset Merge')
 
-    model_types = ["KNN", "RandomForest", "LogisticRegression"]
+    model_types = ["KNN", "RandomForest", "LogisticRegression", "SVM"]
 
     # Correspondance des modèles avec leurs préfixes
     model_prefix = {
         "KNN": "KNN",
         "Random Forest": "RF",
         "Logistic Regression": "LR",
-        "SVM": "SVM"
+        "SVM": "SVM", 
         }
 
     features_order = ["conso", "puiss", "ec"]  # Les variables toujours dans cet ordre
@@ -261,7 +262,7 @@ if page == pages[2] :
     # 📌 Fonction pour charger le dataset initial
     @st.cache_data
     def load_data():
-        df = pd.read_csv("data_merge_v2.csv")  # Remplace par ton vrai fichier
+        df = pd.read_csv("data_merge_v2.csv")  
         return df
 
     df = load_data()
@@ -287,7 +288,10 @@ if page == pages[2] :
         y = df["category"].replace(to_replace=['A','B','C','D','E','F','G'],value=[0,1,2,3,4,5,6])
 
         # Diviser les données en train et test
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=64)
+        if prefix == "SVM" :
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+        else :
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=64)
 
         # 📌 Appliquer le StandardScaler (sauvegardé ou recalculé)
         scaler_path = f"scaler_{model_name}.pkl"  # Exemple : "scaler_KNN.pkl"
@@ -298,7 +302,6 @@ if page == pages[2] :
 
         X_test_scaled = scaler.transform(X_test)
 
-        # Prédictions
         y_pred = model.predict(X_test_scaled)
 
         # Générer le classification report
@@ -319,3 +322,69 @@ if page == pages[2] :
     # Bouton pour exécuter l'évaluation
     if st.button("Évaluer le modèle"):
         evaluate_model(selected_model, selected_variant)
+
+    st.write('## Deuxième étude - les caractéristiques de la voiture')
+
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data_merge_v2.csv") 
+        df2 = df[['cod_cbr','hybride','masse_ordma_min','masse_ordma_max',"puiss_max","W (mm)","At1 (mm)","At2 (mm)",'Carrosserie','typ_boite','nb_rapp','category']]
+        df2["hybride"] = df2["hybride"].replace(to_replace=["non","oui"],value=[0,1])
+        df2["category"] = df2["category"].replace(to_replace=['A','B','C','D','E','F','G'],value=[0,1,2,3,4,5,6])
+        df2 = df2.loc[(df2["cod_cbr"] == "GO")| (df2["cod_cbr"] == "ES") | (df2["cod_cbr"] == "GH")].reset_index(drop=True)
+        df2 = pd.get_dummies(df2)
+        df = df2
+        return df
+
+    df = load_data()
+    st.dataframe(df.head(5))
+
+    
+    model_paths = {
+    "KNN Pas Optimisé": "KNN_pas_optimise.pkl",
+    "Random Forest Pas Optimisé": "RF_pas_optimise.pkl"
+    }
+
+    def evaluate_optimized_model(model_name):
+        #model_path = model_paths[model_name]
+        base_path = "etude2/"
+        model_path = base_path + f"{model_paths[model_name]}"
+
+
+        # Charger le modèle
+        model = joblib.load(model_path)
+
+        # 📌 Sélectionner toutes les features sauf la cible
+        X = df.drop(columns=["category"])  # Prend toutes les colonnes sauf la cible
+        y = df["category"].replace(to_replace=['A','B','C','D','E','F','G'],value=[0,1,2,3,4,5,6])
+
+        # Diviser les données en train et test
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        # Appliquer le StandardScaler (sauvegardé ou recalculé)
+        scaler = StandardScaler().fit(X_train)  # ⚠️ Recalcul du scaler si non sauvegardé
+
+        X_train_scaled = scaler.transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        # Calcul des scores
+        train_score = model.score(X_train_scaled, y_train)
+        test_score = model.score(X_test_scaled, y_test)
+
+        # Affichage des scores dans Streamlit
+        st.subheader(f"Scores - {model_name}")
+        st.write(f"**Score d'entraînement :** {train_score:.3f}")
+        st.write(f"**Score de test :** {test_score:.3f}")
+
+    # 📌 Interface Streamlit
+    st.title("Évaluation des Modèles Pas Optimisés")
+
+    # Sélecteur de modèle
+    selected_model = st.selectbox("Choisissez un modèle :", list(model_paths.keys()))
+
+    # Bouton pour exécuter l'évaluation
+    if st.button("Évaluer le modèle", key='evaluate_button'):
+        evaluate_optimized_model(selected_model)
+
+    st.write('### Feature importance')
+    
