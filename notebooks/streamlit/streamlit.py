@@ -235,7 +235,8 @@ if page == pages[2] :
     model_prefix = {
         "KNN": "KNN",
         "Random Forest": "RF",
-        "Logistic Regression": "LR"
+        "Logistic Regression": "LR",
+        "SVM": "SVM"
         }
 
     features_order = ["conso", "puiss", "ec"]  # Les variables toujours dans cet ordre
