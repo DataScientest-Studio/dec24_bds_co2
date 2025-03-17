@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import io
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -386,7 +387,7 @@ if page == pages[2] :
         st.markdown("""
         Les données les plus importantes qui sortent du premier RandomForest le plus performant sont (nous ne prendrons que les 5 plus importantes) :   
         """)
-        st.image("Images\importances_features.png")
+        st.image("images\importances_features.png")
 
         ("""
         Les données caractéristiques uniquement sont :
@@ -533,7 +534,7 @@ if page == pages[2] :
 
         # Dictionnaire des modèles enregistrés
         models_dict = {
-        "MLP (Multi-Layer Perceptron)": "Modèles_data1\MLP.h5",
+        "MLP (Multi-Layer Perceptron)": "Modèles_data1\MLP.h5", 
         "Modèle Séquentiel (1 couche cachée)": "Modèles_data1\deep1.h5",
         "Modèle Séquentiel (4 couches cachées + ReLU)": "Modèles_data1\Deep2.h5",
         "Modèle Séquentiel (4 couches cachées + LeakyReLU)": "Modèles_data1\Deep3.h5",
@@ -1017,103 +1018,111 @@ if page == pages[2] :
 
 
 
-        st.write("## Modèle de Deep Learning")
-        save_dir = "deep_learning/"
+        
+        st.write('# Deep Learning')
+        model = tf.keras.models.load_model('deep_learning/model.h5')
+        st.title("Description du Modèle de Classification")
 
-        # 📌 Charger `train_data.pkl` contenant X_train_scalé et y_train
-        train_data_path = os.path.join(save_dir, "train_data.pkl")
+        st.markdown("""
+        ### 📌 **Architecture du modèle**
+        Ce modèle de Deep Learning est un réseau de neurones **fully connected** conçu pour une classification en **7 catégories**.
 
-        if os.path.exists(train_data_path):
-            train_data = joblib.load(train_data_path)
+        - Il est constitué de **3 couches cachées** avec activation **ReLU**.
+        - Il utilise des techniques de **Batch Normalization** et **Dropout** pour stabiliser l'entraînement et éviter l'overfitting.
+        - La couche de sortie applique **Softmax** pour fournir des probabilités de classification.
 
-            if "feature_names" not in train_data:
-                st.error("❌ `feature_names` est absent de `train_data.pkl`. Vérifie que le fichier a été sauvegardé correctement.")
-                st.stop()
+        ###  **Structure des couches**
+        | **Type** | **Nombre de Neurones** | **Activation** | **Rôle** |
+        |----------|------------------|--------------|------------------------------|
+        | **Entrée** | 34 (features) | - | Reçoit les données d'entrée |
+        | **Cachée 1** | 128 | ReLU | Capture les patterns complexes |
+        | | BatchNormalization | - | - | Stabilise et accélère l'entraînement |
+        | | Dropout | - | - | Régularisation (évite l'overfitting) |
+        | **Cachée 2** | 64 | ReLU | Réduit la complexité et affine les patterns |
+        | | BatchNormalization | - | - | Normalisation des activations |
+        | | Dropout | - | - | Régularisation |
+        | **Cachée 3** | 32 | ReLU | Capture des caractéristiques plus abstraites |
+        | | BatchNormalization | - | - | Normalisation |
+        | | Dropout | - | - | Régularisation |
+        | **Sortie** | 7 | Softmax | Classification multiclasse |
 
-            X_train_scaled = train_data["X_train"]
-            y_train = train_data["y_train"]
-            feature_names = train_data["feature_names"]
+        ### **Détails supplémentaires**
+        - **Optimiseur** : Adam (`learning_rate=0.001`)
+        - **Fonction de perte** : Sparse Categorical Crossentropy
+        - **Nombre total de paramètres** : `15943`
+        """)
 
-            # 📌 Vérification des tailles
-            if X_train_scaled.shape[0] != y_train.shape[0]:
-                st.error(f"❌ ERREUR : `X_train_scaled` ({X_train_scaled.shape[0]}) et `y_train` ({y_train.shape[0]}) n'ont pas la même taille !")
-                st.stop()
+        # Afficher un résumé détaillé du modèle dans Streamlit
+        st.subheader("Résumé du modèle")
+        
 
-            # ✅ Vérifier que X_train_scaled n'a pas été modifié
-            assert X_train_scaled.shape == (1910, 753), "❌ ERREUR : `X_train_scaled` a été modifié par erreur !"
+        # Charger le modèle et son historique d'entraînement
+        model = tf.keras.models.load_model('deep_learning/model.h5')
 
-        else:
-            st.error("❌ `train_data.pkl` est introuvable.")
-            st.stop()
+        # Charger l'historique de l'entraînement (si sauvegardé)
+        try:
+            history = joblib.load('deep_learning/history.pkl')
+        except FileNotFoundError:
+            st.error("Fichier d'historique non trouvé. Assurez-vous d'avoir sauvegardé history.")
 
-        # 📌 Charger les données de test
-        @st.cache_data
-        def load_data():
-            df = pd.read_csv("data_merge_v2.csv")
-            df_X = df.drop(['category', 'conso_urb', 'conso_exurb', 'conso_mixte', 'co2', 'co_typ_1', 'nox', 'ptcl'], axis=1, errors='ignore')
-            df_X = pd.get_dummies(df_X, dtype='int')
+        # Vérifier si l'historique est chargé
+        if 'history' in locals():
 
-            missing_features = [feat for feat in feature_names if feat not in df_X.columns]
-            extra_features = [feat for feat in df_X.columns if feat not in feature_names]
+            try:
+                report = joblib.load('deep_learning/classification_report.pkl')
+                report_df = pd.DataFrame(report).transpose()  # Transformer en DataFrame pour affichage
+            except FileNotFoundError:
+                report = None
+                report_df = None
 
-            for feature in missing_features:
-                df_X[feature] = 0
 
-            df_X = df_X[feature_names]
-            df_y = df['category'].replace(to_replace=['A','B','C','D','E','F','G'], value=[0,1,2,3,4,5,6])
+            # Afficher le classification report sous forme de tableau
+            if report_df is not None:
+                st.subheader("Rapport de Classification 📊")
+                st.write("Voici les performances du modèle sur les données de test :")
+                
+                # Afficher le DataFrame dans Streamlit
+                st.dataframe(report_df)
+            else:
+                st.warning("Le fichier 'classification_report.pkl' n'a pas été trouvé. Assurez-vous d'avoir sauvegardé le rapport après l'entraînement.")
 
-            return df_X, df_y
+            st.title("Analyse des Performances du Modèle")
 
-        X_test, y_test = load_data()
+            # Courbe d'accuracy
+            st.subheader("Évolution de la précision (accuracy)")
+            fig, ax = plt.subplots()
+            ax.plot(history['accuracy'], label='Train Accuracy', marker='o')
+            ax.plot(history['val_accuracy'], label='Validation Accuracy', marker='o')
+            ax.set_xlabel('Epochs')
+            ax.set_ylabel('Accuracy')
+            ax.legend()
+            ax.grid()
+            st.pyplot(fig)
 
-        # 📌 Charger le StandardScaler
-        scaler = joblib.load(os.path.join(save_dir, "scaler.pkl"))
-        X_test_scaled = scaler.transform(X_test)
+            # Courbe de perte (loss)
+            st.subheader("Évolution de la perte (loss)")
+            fig, ax = plt.subplots()
+            ax.plot(history['loss'], label='Train Loss', marker='o', color='red')
+            ax.plot(history['val_loss'], label='Validation Loss', marker='o', color='blue')
+            ax.set_xlabel('Epochs')
+            ax.set_ylabel('Loss')
+            ax.legend()
+            ax.grid()
+            st.pyplot(fig)
 
-        # 📌 Vérification des dimensions
-        st.write("🔍 **Vérification des dimensions avant exécution du modèle :**")
-        st.write(f"📌 X_train_scaled shape : {X_train_scaled.shape}")
-        st.write(f"📌 y_train shape : {y_train.shape}")
-        st.write(f"📌 X_test_scaled shape : {X_test_scaled.shape}")
-        st.write(f"📌 y_test shape : {y_test.shape}")
+        
+            #st.success("Les performances du modèle ont été affichées avec succès ! ✅")
 
-        # 📌 Bouton pour exécuter le modèle
-        if st.button("Exécuter le modèle de Deep Learning"):
 
-            # 📌 Charger le modèle
-            deep_model = load_model(os.path.join(save_dir, "deep_model.h5"))
 
-            # 📌 Vérifier la correspondance entre `X_test_scaled` et le modèle
-            expected_input_shape = deep_model.input_shape[1]
-            actual_input_shape = X_test_scaled.shape[1]
 
-            if expected_input_shape != actual_input_shape:
-                st.error(f"❌ ERREUR : Le modèle attend {expected_input_shape} features, mais `X_test_scaled` en a {actual_input_shape} !")
-                st.stop()
 
-            # 📌 Vérifier si les données sont bien normalisées
-            st.write("🔍 **Vérification de la normalisation de X_train_scaled et X_test_scaled :**")
-            st.write("📌 Moyenne et écart-type AVANT normalisation (X_train) :")
-            st.write(pd.DataFrame(X_train_scaled).describe())
 
-            st.write("📌 Moyenne et écart-type APRÈS normalisation (X_test_scaled) :")
-            st.write(pd.DataFrame(X_test_scaled).describe())
 
-            # 📌 Faire des prédictions
-            y_pred_proba = deep_model.predict(X_test_scaled)
-            y_pred = np.argmax(y_pred_proba, axis=1)
 
-            # 📌 Calculer les scores
-            test_accuracy = np.mean(y_pred == y_test)
-            train_accuracy = deep_model.evaluate(X_train_scaled, y_train, verbose=0)[1]
 
-            # 📌 Afficher les résultats
-            st.subheader("Résultats du Modèle Deep Learning")
-            st.write(f"🔹 **Score d'entraînement :** {train_accuracy:.3f}")
-            st.write(f"🔹 **Score de test :** {test_accuracy:.3f}")
 
-            # 📌 Afficher les prédictions
-            predictions_df = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
-            st.dataframe(predictions_df)
 
-            st.success("✅ Modèle Deep Learning chargé et évalué avec succès !")
+
+
+    
