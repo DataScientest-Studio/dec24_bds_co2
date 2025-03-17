@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +8,13 @@ import seaborn as sns
 import joblib
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+
+from imblearn.over_sampling import SMOTE
+
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from sklearn.preprocessing import StandardScaler
 
 st.title("DS Octobre - Projet CO2")
 st.sidebar.title('Sommaire')
@@ -388,3 +395,346 @@ if page == pages[2] :
 
     st.write('### Feature importance')
     
+    base_path = "etude2/RF_pas_optimise.pkl"
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data_merge_v2.csv")
+        # Sélectionner les bonnes colonnes
+        df2 = df[['cod_cbr','hybride','masse_ordma_min','masse_ordma_max',"puiss_max","W (mm)","At1 (mm)","At2 (mm)",'Carrosserie','typ_boite','nb_rapp','category']]
+        
+        # Encodage des variables catégoriques
+        df2["hybride"] = df2["hybride"].replace({"non": 0, "oui": 1})
+        df2["category"] = df2["category"].replace({'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6})
+        df2 = pd.get_dummies(df2)
+
+        return df2
+
+    df = load_data()
+
+
+    def display_feature_importance():
+        # Charger le modèle
+        model = joblib.load(base_path)
+
+        # 📌 Vérifier la taille de feature_importances_
+        nb_features_model = len(model.feature_importances_)
+
+        # 📌 Récupérer les features du dataset
+        dataset_features = df.drop(columns=["category"]).columns.tolist()
+        nb_features_dataset = len(dataset_features)
+
+        # 📌 Vérifier la correspondance - mis en commentaire pour masquer les erreur, utiles pour le troubleshooting
+        #st.write(f"📌 Nombre de features dans le modèle : {nb_features_model}")
+        #st.write(f"📌 Nombre de features dans le dataset : {nb_features_dataset}")
+
+        # 📌 Si la taille ne correspond pas, afficher la différence
+        if nb_features_model != nb_features_dataset:
+            # mis en commentaire pour masquer les erreur, utiles pour le troubleshooting
+            #st.error("⚠️ Problème : Le nombre de features dans le dataset et le modèle ne correspond pas !") 
+
+            # 📌 Vérifier quelles colonnes sont en trop ou manquantes
+            features_manquantes = [f for f in dataset_features if f not in dataset_features[:nb_features_model]]
+            features_supplémentaires = dataset_features[nb_features_model:]
+
+            # mis en commentaire pour masquer les erreur, utiles pour le troubleshooting
+            #st.write(f"🎯 Features manquantes dans le dataset : {features_manquantes}")
+            #st.write(f"⚠️ Features supplémentaires dans le dataset : {features_supplémentaires}")
+
+            # 📌 Forcer la correspondance en prenant uniquement les premières colonnes
+            df_filtered = df[dataset_features[:nb_features_model]]
+            #st.warning("⚠️ Alignement forcé du dataset pour correspondre au modèle.")
+        else:
+            df_filtered = df[dataset_features]  # Les features correspondent déjà
+
+        # 📌 Vérifier que la taille correspond maintenant -  mis en commentaire pour masquer les erreur, utiles pour le troubleshooting
+        #st.write(f"✅ Nouvelle taille des features dans Streamlit : {df_filtered.shape[1]}")
+        #st.write(f"✅ Taille des features dans le modèle : {nb_features_model}")
+
+        # 📌 Récupérer l'importance des features avec le dataset corrigé
+        feature_importances = model.feature_importances_
+        importance_df = pd.DataFrame({
+            "Feature": df_filtered.columns,
+            "Importance": feature_importances
+        })
+
+        # 📌 Trier par importance décroissante
+        importance_df = importance_df.sort_values(by="Importance", ascending=False)
+
+        # 📌 Afficher les résultats dans Streamlit
+        st.write("### Importance des Features du Random Forest")
+        st.dataframe(importance_df.style.format(precision=3))
+
+        # 📌 Afficher un graphique des 10 features les plus importantes
+        plt.figure(figsize=(8, 6))
+        plt.barh(importance_df["Feature"][:10], importance_df["Importance"][:10], color="skyblue")
+        plt.xlabel("Importance")
+        plt.ylabel("Feature")
+        plt.title("Top 10 des Features Importantes")
+        plt.gca().invert_yaxis()
+        st.pyplot(plt)
+
+    # 📌 Interface Streamlit
+    st.title("Analyse du Random Forest - Importance des Features")
+
+    # Bouton pour afficher les importances
+    if st.button("Afficher l'importance des features", key="feature_importance_button"):
+        display_feature_importance()
+
+
+
+
+    # 📌 Définir les chemins des modèles
+    base_path = "etude2/"
+    knn_model_path = base_path + "KNN_pas_optimise.pkl"
+    rf_model_path = base_path + "RF_pas_optimise.pkl"
+
+    # 📌 Charger le dataset
+    @st.cache_data
+    def load_data():
+        dataset_path = "data_merge_v2.csv"  # Mets le bon chemin
+        df = pd.read_csv(dataset_path)
+        
+        # Sélectionner les bonnes colonnes
+        df2 = df[['cod_cbr','hybride','masse_ordma_min','masse_ordma_max',"puiss_max","W (mm)","At1 (mm)","At2 (mm)",'Carrosserie','typ_boite','nb_rapp','category']]
+        
+        # Encodage des variables catégoriques
+        df2["hybride"] = df2["hybride"].replace({"non": 0, "oui": 1})
+        df2["category"] = df2["category"].replace({'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6})
+        df2 = pd.get_dummies(df2)
+
+        return df2
+
+    df = load_data()
+
+    if st.button("Charger les modèles et afficher les graphiques", key="btn_graphiques"):
+
+        #  Vérifier que les fichiers existent
+
+        #  Charger les modèles après le clic sur le bouton
+        knn_model = joblib.load(knn_model_path)
+        rf_model = joblib.load(rf_model_path)
+
+        #  Générer les listes de performance pour les graphiques
+        importance_list = list(df.drop(columns=["category"]).columns)  # Features disponibles
+
+        list_knn_train = []
+        list_knn_test = []
+        list_rf_train = []
+        list_rf_test = []
+
+        for i in range(len(importance_list)):
+            importance_sous_list = importance_list[:i+1]
+
+            X = df[importance_sous_list]
+            y = df["category"]
+
+            #  Split des données
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=64)
+
+            #  Standardisation
+            scaler = StandardScaler().fit(X_train)
+            X_train_scaled = scaler.transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
+
+            #  Évaluation du modèle KNN
+            knn_model.fit(X_train_scaled, y_train)
+            list_knn_train.append(knn_model.score(X_train_scaled, y_train))
+            list_knn_test.append(knn_model.score(X_test_scaled, y_test))
+
+            #  Évaluation du modèle Random Forest
+            rf_model.fit(X_train_scaled, y_train)
+            list_rf_train.append(rf_model.score(X_train_scaled, y_train))
+            list_rf_test.append(rf_model.score(X_test_scaled, y_test))
+
+        #  Graphique pour KNN
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(list_knn_train, label="KNN Train", color='purple')
+        ax.plot(list_knn_test, label="KNN Test", color="orange")
+        ax.set_title("Performance du KNN")
+        ax.legend()
+        ax.set_xticks(range(len(importance_list)))
+        ax.set_xticklabels(importance_list, rotation=80)
+        st.pyplot(fig)
+
+        #  Graphique pour Random Forest
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(list_rf_train, label="Random Forest Train", color='blue')
+        ax.plot(list_rf_test, label="Random Forest Test", color="green")
+        ax.set_title("Performance du Random Forest")
+        ax.legend()
+        ax.set_xticks(range(len(importance_list)))
+        ax.set_xticklabels(importance_list, rotation=80)
+        st.pyplot(fig)
+
+
+
+
+    # 📌 Définir le répertoire des fichiers modèles
+    save_dir = "etude3/"
+
+    # 📌 Vérifier si les fichiers modèles existent
+    model_files = ["KNN_smote.pkl", "RF_smote.pkl", "scaler.pkl", "features.pkl"]
+
+
+    # 📌 Charger les modèles et transformations
+    knn = joblib.load(save_dir+ "KNN_smote.pkl")
+    rforest = joblib.load(save_dir+  "RF_smote.pkl")
+    scaler = joblib.load(save_dir+  "scaler.pkl")
+    model_features = joblib.load(save_dir+  "features.pkl")
+    
+
+    # 📌 Charger le dataset
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data_merge_v2.csv")
+
+        # Sélectionner les bonnes colonnes
+        df2 = df[['cod_cbr','hybride','masse_ordma_min','masse_ordma_max',"puiss_max","W (mm)","At1 (mm)","At2 (mm)",'Carrosserie','typ_boite','nb_rapp','category']]
+
+        # Encodage des variables catégoriques
+        df2["hybride"] = df2["hybride"].replace({"non": 0, "oui": 1})
+        df2["category"] = df2["category"].replace({'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6})
+        df2 = pd.get_dummies(df2)
+
+        # S'assurer que toutes les features correspondent au modèle
+        for feature in model_features:
+            if feature not in df2.columns:
+                df2[feature] = 0  # Ajouter les colonnes manquantes avec des valeurs nulles
+
+        # Réorganiser les colonnes pour correspondre au modèle
+        df2 = df2[["category"] + model_features]
+
+        return df2
+
+    df = load_data()
+
+    # 📌 Séparer X et y
+    X = df.drop(columns=["category"])
+    y = df["category"]
+
+    # 📌 Split des données (même split que lors de l'entraînement)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=64)
+
+    # 📌 Appliquer le StandardScaler déjà entraîné
+    X_train_scaled = scaler.transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # 📌 Calculer les scores sans refaire `fit()`
+    knn_train_score = knn.score(X_train_scaled, y_train)  # Utiliser le scaler chargé
+    knn_test_score = knn.score(X_test_scaled, y_test)
+
+    rf_train_score = rforest.score(X_train_scaled, y_train)
+    rf_test_score = rforest.score(X_test_scaled, y_test)
+
+    # 📌 Afficher les résultats dans Streamlit
+    st.subheader("Résultats du Modèle KNN (Chargé)")
+    st.write(f"🔹 **Score d'entraînement :** {knn_train_score:.3f}")
+    st.write(f"🔹 **Score de test :** {knn_test_score:.3f}")
+
+    st.subheader("Résultats du Modèle Random Forest (Chargé)")
+    st.write(f"🔹 **Score d'entraînement :** {rf_train_score:.3f}")
+    st.write(f"🔹 **Score de test :** {rf_test_score:.3f}")
+
+
+
+
+    st.write("## Model de Deep Learning")
+    save_dir = "deep_learning/"
+
+    # 📌 Charger `train_data.pkl` contenant X_train_scalé et y_train
+    train_data_path = os.path.join(save_dir, "train_data.pkl")
+
+    if os.path.exists(train_data_path):
+        train_data = joblib.load(train_data_path)
+
+        if "feature_names" not in train_data:
+            st.error("❌ `feature_names` est absent de `train_data.pkl`. Vérifie que le fichier a été sauvegardé correctement.")
+            st.stop()
+
+        X_train_scaled = train_data["X_train"]
+        y_train = train_data["y_train"]
+        feature_names = train_data["feature_names"]
+
+        # 📌 Vérification des tailles
+        if X_train_scaled.shape[0] != y_train.shape[0]:
+            st.error(f"❌ ERREUR : `X_train_scaled` ({X_train_scaled.shape[0]}) et `y_train` ({y_train.shape[0]}) n'ont pas la même taille !")
+            st.stop()
+
+        # ✅ Vérifier que X_train_scaled n'a pas été modifié
+        assert X_train_scaled.shape == (1910, 753), "❌ ERREUR : `X_train_scaled` a été modifié par erreur !"
+
+    else:
+        st.error("❌ `train_data.pkl` est introuvable.")
+        st.stop()
+
+    # 📌 Charger les données de test
+    @st.cache_data
+    def load_data():
+        df = pd.read_csv("data_merge_v2.csv")
+        df_X = df.drop(['category', 'conso_urb', 'conso_exurb', 'conso_mixte', 'co2', 'co_typ_1', 'nox', 'ptcl'], axis=1, errors='ignore')
+        df_X = pd.get_dummies(df_X, dtype='int')
+
+        missing_features = [feat for feat in feature_names if feat not in df_X.columns]
+        extra_features = [feat for feat in df_X.columns if feat not in feature_names]
+
+        for feature in missing_features:
+            df_X[feature] = 0
+
+        df_X = df_X[feature_names]
+        df_y = df['category'].replace(to_replace=['A','B','C','D','E','F','G'], value=[0,1,2,3,4,5,6])
+
+        return df_X, df_y
+
+    X_test, y_test = load_data()
+
+    # 📌 Charger le StandardScaler
+    scaler = joblib.load(os.path.join(save_dir, "scaler.pkl"))
+    X_test_scaled = scaler.transform(X_test)
+
+    # 📌 Vérification des dimensions
+    st.write("🔍 **Vérification des dimensions avant exécution du modèle :**")
+    st.write(f"📌 X_train_scaled shape : {X_train_scaled.shape}")
+    st.write(f"📌 y_train shape : {y_train.shape}")
+    st.write(f"📌 X_test_scaled shape : {X_test_scaled.shape}")
+    st.write(f"📌 y_test shape : {y_test.shape}")
+
+    # 📌 Bouton pour exécuter le modèle
+    if st.button("Exécuter le modèle de Deep Learning"):
+
+        # 📌 Charger le modèle
+        deep_model = load_model(os.path.join(save_dir, "deep_model.h5"))
+
+        # 📌 Vérifier la correspondance entre `X_test_scaled` et le modèle
+        expected_input_shape = deep_model.input_shape[1]
+        actual_input_shape = X_test_scaled.shape[1]
+
+        if expected_input_shape != actual_input_shape:
+            st.error(f"❌ ERREUR : Le modèle attend {expected_input_shape} features, mais `X_test_scaled` en a {actual_input_shape} !")
+            st.stop()
+
+        # 📌 Vérifier si les données sont bien normalisées
+        st.write("🔍 **Vérification de la normalisation de X_train_scaled et X_test_scaled :**")
+        st.write("📌 Moyenne et écart-type AVANT normalisation (X_train) :")
+        st.write(pd.DataFrame(X_train_scaled).describe())
+
+        st.write("📌 Moyenne et écart-type APRÈS normalisation (X_test_scaled) :")
+        st.write(pd.DataFrame(X_test_scaled).describe())
+
+        # 📌 Faire des prédictions
+        y_pred_proba = deep_model.predict(X_test_scaled)
+        y_pred = np.argmax(y_pred_proba, axis=1)
+
+        # 📌 Calculer les scores
+        test_accuracy = np.mean(y_pred == y_test)
+        train_accuracy = deep_model.evaluate(X_train_scaled, y_train, verbose=0)[1]
+
+        # 📌 Afficher les résultats
+        st.subheader("Résultats du Modèle Deep Learning")
+        st.write(f"🔹 **Score d'entraînement :** {train_accuracy:.3f}")
+        st.write(f"🔹 **Score de test :** {test_accuracy:.3f}")
+
+        # 📌 Afficher les prédictions
+        predictions_df = pd.DataFrame({"Actual": y_test, "Predicted": y_pred})
+        st.dataframe(predictions_df)
+
+        st.success("✅ Modèle Deep Learning chargé et évalué avec succès !")
