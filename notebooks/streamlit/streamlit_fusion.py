@@ -262,12 +262,17 @@ if page == pages[1] :
         st.pyplot(fig)
 
         fig = plt.figure()
-        sns.scatterplot(data=df, x='ec (cm3)', y='puiss_max', hue='category')
+        sns.scatterplot(data=df, x='ec (cm3)', y='puiss_max', hue='category') 
         plt.xlabel("Engine Capacity")
         plt.ylabel("Puissance maximale")
         plt.title("La puissance maximale en fonction de capacité du moteur pour chaque catégorie d'émission de CO2")
         st.pyplot(fig)
 
+        fig = plt.figure()
+        categories_sorted = sorted(df['category'].unique())
+        sns.countplot(data = df, x = 'category', order=categories_sorted)
+        plt.title("Répartition des catégories du dataset fusionné sans les doublons")
+        st.pyplot(fig)
 
 if page == pages[2] :
     st.write('# Modélisation')
