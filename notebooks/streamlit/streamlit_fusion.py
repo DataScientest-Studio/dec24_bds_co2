@@ -23,7 +23,7 @@ pages=['Introduction', 'Exploration', 'Modélisation']
 page = st.sidebar.radio('Aller vers', pages)
 
 
-# premier onglet - introduction au projet
+# premier onglet - introduction au projet 
 if page == pages[0] : 
     st.write('# Introduction')
     st.write("Le changement climatique est l’un des défis majeurs du XXIe siècle, et la réduction des émissions de CO₂ est un enjeu central dans la lutte contre le réchauffement global. Parmi les secteurs les plus polluants, le transport joue un rôle clé : en 2019, il était responsable d’environ un quart des émissions totales de CO₂ de l’Union européenne, dont 71,7 % provenaient du transport routier. Les voitures personnelles, en particulier, représentaient 60,6% des émissions de CO₂ liées à ce secteur."
@@ -246,7 +246,7 @@ if page == pages[1] :
         st.write('Voici un graphe qui permet de comprendre comment la fusion a été faite')
         st.image("images\Schema merge.png")
 
-        st.write('### Apperçu des datasets fusionnés')
+        st.write('### Aperçu des datasets fusionnés')
         st.dataframe(df.head(5))
 
 
@@ -562,7 +562,7 @@ if page == pages[2] :
         st.write(f"**Accuracy :** {accuracy:.4f}")
         st.progress(int(accuracy * 100))  # Barre de progression pour l'accuracy
 
-        # Préparer les données pour le tableau (exclure les "avg" pour ne garder que les classes réelles)
+        # Préparer les données pour le tableau (exclure les "avg" pour ne garder que les classes réelles) 
         data = []
         for classe, valeurs in report.items():
             if isinstance(valeurs, dict):
@@ -773,7 +773,6 @@ if page == pages[2] :
         if st.button("Évaluer le modèle", key='evaluate_button'):
             evaluate_optimized_model(selected_model)
 
-        st.write('### Feature importance')
     
         base_path = "etude2/RF_pas_optimise.pkl"
         @st.cache_data
