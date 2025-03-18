@@ -164,7 +164,7 @@ if page == pages[1] :
         # plot côte à côte
         fig, axes = plt.subplots(ncols=2, figsize=(12, 5))
         # Barplot du type de boite
-        sns.countplot(data=df_without_Na, x='typ_boite', palette="viridis", ax=axes[0])
+        sns.countplot(data=df_without_Na, x='typ_boite', palette="viridis", ax=axes[0]) 
         axes[0].set_xlabel('Type de boite de vitesse', fontsize=12)
         axes[0].set_ylabel('Count', fontsize=12)
         axes[0].set_title('Répartition des boites de vitesses', fontsize=14)
