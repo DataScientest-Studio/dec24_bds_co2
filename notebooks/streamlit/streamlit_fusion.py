@@ -445,9 +445,9 @@ if page == pages[2] :
             "RandomForest (SMOTE)": "Modèles_data1\RF_SMOTE",
             "XGBoost (Données SMOTE)": "Modèles_data1\XGB_smote",
             "RandomForest (Undersampling)": "Modèles_data1\RF_undersampling",
-            "XGBoost (Undersampling)": "Modèles_data1\XGB_undersampling",
+            "XGBoost (Undersampling)": "Modèles_data1\XGB_undersampling", 
             "RandomForest (Variables plus importantes)": "Modèles_data1\RF_300_important",
-            "RandomForest (Caractéristiques uniquement)": "Modèles_data1\RF_caracteristiques"         
+            "RandomForest (Caractéristiques uniquement)": "Modèles_data1\RF_caracteristiques"
              
         }
 
@@ -553,7 +553,7 @@ if page == pages[2] :
         test_pred_class = np.argmax(test_pred, axis=1)
 
         # Calculer les métriques
-        report = classification_report(y_test, test_pred_class, output_dict=True)
+        report = classification_report(y_test, test_pred_class, output_dict=True) 
         accuracy = report['accuracy']
         conf_matrix = confusion_matrix(y_test, test_pred_class, normalize='true').round(2)
 
