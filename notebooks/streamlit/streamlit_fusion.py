@@ -533,7 +533,7 @@ if page == pages[2] :
 
 
         # Dictionnaire des modèles enregistrés
-        models_dict = {
+        models_dict = { 
         "MLP (Multi-Layer Perceptron)": "Modèles_data1\MLP.h5", 
         "Modèle Séquentiel (1 couche cachée)": "Modèles_data1\deep1.h5",
         "Modèle Séquentiel (4 couches cachées + ReLU)": "Modèles_data1\Deep2.h5",
@@ -541,7 +541,7 @@ if page == pages[2] :
         "Modèle Séquentiel (4 couches + Dopout + batchnormalization + ReLU)": "Modèles_data1\Deep4.h5"
         }
 
-        # Sélection du modèle via Streamlit
+        # Sélection du modèle via Streamlit 
         selected_model_name = st.selectbox("Choisissez un modèle :", list(models_dict.keys()))
 
         # Charger le modèle sélectionné
