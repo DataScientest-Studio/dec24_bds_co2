@@ -557,7 +557,7 @@ if page == pages[2] :
         accuracy = report['accuracy']
         conf_matrix = confusion_matrix(y_test, test_pred_class, normalize='true').round(2)
 
-    # Affichage des résultats
+    # Affichage des résultats 
         st.write(f"#### Résultats pour : {selected_model_name}")
         st.write(f"**Accuracy :** {accuracy:.4f}")
         st.progress(int(accuracy * 100))  # Barre de progression pour l'accuracy
